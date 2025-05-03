@@ -73,6 +73,7 @@ if page == "Chatbot":
 
 # Doctor Availability Page
 # Doctor Availability Page
+# Doctor Availability Page
 elif page == "Doctor Availability":
     st.subheader("Doctor Schedule Viewer")
 
@@ -80,7 +81,14 @@ elif page == "Doctor Availability":
     filtered = doctors[doctors["Specialty"] == selected_specialty]
 
     st.write(f"Showing availability for **{selected_specialty}**:")
-    st.dataframe(filtered[["Doctor", "Date", "Time", "Available"]])
+    st.dataframe(filtered[[
+        "Doctor Name", 
+        "Available Days", 
+        "Available Time Slot", 
+        "Slot Duration (mins)", 
+        "Approx. Slots Per Day", 
+        "Booking Status"
+    ]])
 
     if st.button("Show All Doctors"):
         st.dataframe(doctors)
