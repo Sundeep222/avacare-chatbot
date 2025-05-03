@@ -66,23 +66,33 @@ if page == "Chatbot":
         elif any(word in user_input_lower for word in ["thanks", "thank you", "bye", "goodbye"]):
             st.write("You're very welcome! Let me know if there's anything else you need.")
 
-        # DEFAULT
-        else:
-            st.write("I'm still learning! Try asking me about appointments, availability, insurance, or symptoms.")
-        elif "insurance" in user_input.lower():
-            st.write("We accept most public and private insurance. Would you like to see a list of accepted providers?")
-        elif "reschedule" in user_input.lower() or "cancel" in user_input.lower():
-            st.write("Sure! To reschedule or cancel, please provide your appointment ID or contact us directly at (800) 555-AVACARE.")
-        elif "contact" in user_input.lower():
-            st.write("Our main clinic line is (800) 555-AVACARE. We’re available Mon–Fri, 8am–5pm.")
-        elif "symptom" in user_input.lower():
-            st.write("You can describe your symptoms, and I’ll try to help you find the right department!")
-        elif "reminder" in user_input.lower():
-            st.write("Would you like me to enable SMS or email reminders for upcoming appointments?")
-        elif "book" in user_input.lower():
-            st.write("To book, please share your preferred date, time, and doctor or specialty.")
-        elif "emergency" in user_input.lower():
-            st.write("If this is an emergency, please call 911 or go to the nearest hospital immediately.")
+     if user_input:
+    user_input = user_input.lower()
+
+    if "appointment" in user_input:
+        st.write("Sure! Please tell me your preferred doctor or specialty.")
+    elif "availability" in user_input:
+        st.write("Here are some available slots 👇")
+        st.dataframe(doctors)
+    elif "data" in user_input:
+        st.write("I can check your no-show risk! Please enter your patient ID.")
+    elif "insurance" in user_input:
+        st.write("We accept most public and private insurance. Would you like to see a list of accepted providers?")
+    elif "reschedule" in user_input or "cancel" in user_input:
+        st.write("Sure! To reschedule or cancel, please provide your appointment ID or contact us directly at (800) 555-AVACARE.")
+    elif "contact" in user_input:
+        st.write("Our main clinic line is (800) 555-AVACARE. We’re available Mon–Fri, 8am–5pm.")
+    elif "symptom" in user_input:
+        st.write("You can describe your symptoms, and I’ll try to help you find the right department!")
+    elif "reminder" in user_input:
+        st.write("Would you like me to enable SMS or email reminders for upcoming appointments?")
+    elif "book" in user_input:
+        st.write("To book, please share your preferred date, time, and doctor or specialty.")
+    elif "emergency" in user_input:
+        st.write("If this is an emergency, please call 911 or go to the nearest hospital immediately.")
+    else:
+        st.write("I'm still learning. Try asking about appointments or availability!")
+
 
 
 # Doctor Availability Page
