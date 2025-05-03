@@ -42,4 +42,5 @@ elif page == "Doctor Availability":
 # Patient Data Page
 elif page == "Patient Data":
     st.subheader("Patient No-Show Risk (Simulated Data)")
-    st.dataframe(patients[['PatientID', 'Name', 'Age', 'NoShowRisk', 'LastVisitDate']])
+    st.dataframe(patients[['Unique ID', 'First Name', 'Last Name', 'Age', 'Gender', 'No-Shows/Cancellations']])
+
