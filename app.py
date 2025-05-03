@@ -110,7 +110,6 @@ elif page == "Doctor Availability":
 
     if st.button("Show All Doctors"):
         st.dataframe(doctors)
-
 # ------------------------------
 # Patient Data Page
 # ------------------------------
@@ -128,8 +127,6 @@ elif page == "Patient Data":
     ]
 
     st.write("Filtered Patient Records:")
-    st.dataframe(filtered_patients[[
-        "Unique ID", "First Name", "Last Name", "Age", "Gender", "No-Shows/Cancellations"
-    ]])
-        "Unique ID", "First Name", "Last Name", "Age", "Gender", "No-Shows/Cancellations"
-    ]])
+    st.dataframe(filtered_patients[
+        ["Unique ID", "First Name", "Last Name", "Age", "Gender", "No-Shows/Cancellations"]
+    ])
