@@ -11,8 +11,9 @@ page = st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Dat
 # Load data
 @st.cache_data
 def load_data():
-    patients = pd.read_excel("Updated_Synthetic_Patient_Scheduling_Data.xlsx")
-    doctors = pd.read_excel("Copy of Summarized_Doctor_Availability_Data.xlsx")
+    patients = pd.read_excel("patients.xlsx")
+    doctors = pd.read_excel("doctors.xlsx")
+
     return patients, doctors
 
 patients, doctors = load_data()
