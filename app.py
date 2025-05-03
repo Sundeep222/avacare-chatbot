@@ -27,9 +27,20 @@ if page == "Chatbot":
     if user_input:
         user_input_lower = user_input.lower()
 
-        # Appointments
+        # Appointment Booking
         if any(word in user_input_lower for word in ["appointment", "book", "schedule"]):
-            st.write("You can book an appointment by selecting a time slot with your preferred doctor. Would you like to see who's available?")
+            specialties = doctors["Specialty"].unique()
+            st.write("Let's help you book an appointment!")
+            selected_specialty = st.selectbox("Select a specialty", specialties)
+
+            filtered_doctors = doctors[doctors["Specialty"] == selected_specialty]
+            selected_doctor = st.selectbox("Choose a doctor", filtered_doctors["Doctor Name"].unique())
+
+            available_times = filtered_doctors[filtered_doctors["Doctor Name"] == selected_doctor]["Available Time Slot"].unique()
+            selected_time = st.selectbox("Pick a time slot", available_times)
+
+            if st.button("Confirm Appointment"):
+                st.success(f"✅ Your appointment with **{selected_doctor}** at **{selected_time}** is confirmed!")
 
         # Cancel
         elif "cancel" in user_input_lower:
@@ -67,10 +78,10 @@ if page == "Chatbot":
         elif any(word in user_input_lower for word in ["thanks", "thank you", "bye", "goodbye"]):
             st.write("You're very welcome! Let me know if there's anything else you need.")
 
+        # Fallback
         else:
             st.write("I'm still learning. Try asking about appointments, symptoms, insurance, or availability!")
 
-# ------------------------------
 # Doctor Availability Page
 # ------------------------------
 elif page == "Doctor Availability":
