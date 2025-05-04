@@ -51,7 +51,8 @@ if page == "Chatbot":
                     matched_docs = doctors[doctors["Specialty"].str.lower() == "general physician"]
 
                     if not matched_docs.empty:
-                        selected_doctor = st.selectbox("Choose a doctor:", matched_docs["Doctor Name"].unique())
+                     selected_doctor = st.selectbox("Choose a doctor:", matched_docs["Doctor_Name"].unique())
+
 
                         available_times = matched_docs[matched_docs["Doctor Name"] == selected_doctor]["Available Time Slot"].unique()
                         selected_time = st.selectbox("Pick a time slot:", available_times)
