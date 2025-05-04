@@ -75,6 +75,17 @@ if page == "Chatbot":
                 else:
                     st.warning("No doctors found for that specialty right now.")
 
+            elif any(word in user_input_lower for word in ["book appointment", "schedule appointment", "make appointment"]):
+                st.write("Sure! Let's help you book an appointment.")
+                specialties = doctors["Specialty"].dropna().unique()
+                selected_specialty = st.selectbox("Choose a specialty:", specialties, key="manual_specialty")
+                matched_doctors = doctors[doctors["Specialty"] == selected_specialty]
+                selected_doctor = st.selectbox("Choose a doctor:", matched_doctors["Doctor_Name"].unique(), key="manual_doc")
+                selected_date = st.date_input("Select appointment date", key="manual_date")
+                selected_time = st.selectbox("Pick a time slot:", ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM"], key="manual_time")
+                if st.button("Confirm Manual Appointment"):
+                    st.success(f"✅ Appointment confirmed with **{selected_doctor}** on **{selected_date}** at **{selected_time}**.")
+
             elif "insurance" in user_input_lower:
                 st.write("We accept Aetna, BlueCross, Medicaid, Medicare, UnitedHealth, and more.")
 
