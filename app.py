@@ -98,3 +98,18 @@ elif page == "Patient Data":
 
     df = patients[(patients["Age"].between(age_range[0], age_range[1])) & (patients["Gender"] == gender)]
     st.dataframe(df[["Patient ID", "Full Name", "Age", "Gender", "No-Shows", "Emergency Contact Name"]])
+
+st.success(f"""
+✅ **Appointment Confirmed!**
+
+Thank you, **{patient_name}**. Your appointment details are below:
+
+- **Doctor:** {doctor_name} ({specialty})  
+- **Date:** {appointment_date}  
+- **Time:** {appointment_time}  
+
+📢 A reminder has been sent to your emergency contact: **{emergency_contact}**.  
+
+👋 See you soon! Stay well, and don’t forget to arrive a few minutes early.
+""")
+
