@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import yagmail
 
 # Load data
 doctors = pd.read_excel("doctors.xlsx")
@@ -59,12 +60,17 @@ if st.session_state.step == 3:
         if st.button("Confirm Appointment"):
             patient_name = st.session_state.patient['First_Name'] + " " + st.session_state.patient['Last_Name']
             emergency_name = st.session_state.patient['Emergency_Contact_Name']
+            patient_email = st.session_state.patient["Email"]
+            appointment_date = "2025-05-06"
+
             st.session_state.step = 4
+
+            # Confirmation message
             st.markdown(f"""
             ✅ **Appointment Confirmed!**  
             **Patient:** {patient_name}  
             **Doctor:** {selected_doctor}  
-            **Date & Time:** 2025-05-06 at {selected_time}  
+            **Date & Time:** {appointment_date} at {selected_time}  
             **Location:** Dallas  
             **Insurance:** {st.session_state.patient['Insurance_Type']}  
 
@@ -73,6 +79,28 @@ if st.session_state.step == 3:
             Thank you, **{patient_name}**. See you soon! 😊
             """)
 
-# Optional Navigation (non-functional placeholders)
+            # EMAIL REMINDER
+            try:
+                yag = yagmail.SMTP("your_email@gmail.com")  # Replace with your Gmail
+                yag.send(
+                    to=patient_email,
+                    subject="Appointment Reminder from AVACARE",
+                    contents=f"""
+                    Hi {patient_name},
+
+                    This is a reminder for your appointment with Dr. {selected_doctor} on {appointment_date} at {selected_time}.
+
+                    Your emergency contact {emergency_name} has also been notified.
+
+                    Stay well,
+                    AVACARE AI Assistant
+                    """
+                )
+            except Exception as e:
+                st.error("❌ Failed to send email reminder. Please check your setup.")
+                st.code(str(e))
+
+# Sidebar
 st.sidebar.title("Navigation")
 st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Data"])
+
