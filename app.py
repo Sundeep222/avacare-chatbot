@@ -1,14 +1,13 @@
 import streamlit as st
 import pandas as pd
 
-# Title
+# Page title
 st.title("AVACARE - AI Scheduling Assistant")
 
 # Sidebar
 st.sidebar.header("Navigation")
 page = st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Data"])
 
-# Load data
 @st.cache_data
 def load_data():
     patients = pd.read_excel("patients.xlsx")
@@ -17,95 +16,80 @@ def load_data():
 
 patients, doctors = load_data()
 
-# ------------------------------
-# Chatbot Page
-# ------------------------------
+# Session state
+if "checked_in" not in st.session_state:
+    st.session_state.checked_in = False
+if "name" not in st.session_state:
+    st.session_state.name = ""
+if "specialty" not in st.session_state:
+    st.session_state.specialty = ""
+if "ready_to_book" not in st.session_state:
+    st.session_state.ready_to_book = False
+
+# ---------------- Chatbot ----------------
 if page == "Chatbot":
     st.subheader("Chat with AVACARE")
     user_input = st.text_input("How can I help you today?")
 
-    if user_input.lower() in ["hi", "hello", "hey"]:
-        st.write("Hi! May I know your Patient ID and Name?")
-        patient_id = st.text_input("Enter your Patient ID:")
-        patient_name = st.text_input("Enter your Full Name:")
+    if user_input:
+        lower = user_input.lower()
 
-        if patient_id and patient_name:
-            st.success(f"Thanks {patient_name}, you're now checked in!")
-            st.session_state["patient_name"] = patient_name
-            st.session_state["patient_id"] = patient_id
+        if not st.session_state.checked_in and any(word in lower for word in ["hi", "hello", "hey"]):
+            st.write("Hi! May I know your Patient ID and Name?")
+            pid = st.text_input("Enter your Patient ID:")
+            pname = st.text_input("Enter your Full Name:")
 
-    if "book appointment" in user_input.lower():
-        if "patient_name" in st.session_state:
-            st.write(f"Welcome back, {st.session_state['patient_name']}! Please select your symptoms below:")
+            if pid and pname:
+                st.session_state.checked_in = True
+                st.session_state.name = pname
+                st.success(f"Thanks {pname}, you're now checked in!")
 
-            symptoms_list = ["Fever", "Headache", "Cough", "Back Pain", "Skin Rash"]
-            selected_symptoms = st.multiselect("Choose your symptoms:", symptoms_list)
+        elif st.session_state.checked_in and "book" in lower:
+            st.write(f"Welcome back, {st.session_state.name}! Please select your symptoms below:")
+            symptoms = [
+                "Fever", "Cough", "Headache", "Stomach pain", "Rash", "Fatigue", "Shortness of breath", "Ear pain"
+            ]
+            selected = st.multiselect("Choose your symptoms:", symptoms)
 
-            if selected_symptoms:
-                st.session_state["symptoms"] = selected_symptoms
+            if selected:
+                if any(s in selected for s in ["Cough", "Fever", "Headache"]):
+                    specialty = "General Physician"
+                elif "Ear pain" in selected:
+                    specialty = "ENT Specialist"
+                else:
+                    specialty = "General Physician"
 
-                # Recommend General Physician for now
-                st.write("Thanks! Based on your symptoms, we recommend seeing a **General Physician** or appropriate specialist.")
-
+                st.session_state.specialty = specialty
+                st.write(f"Thanks! Based on your symptoms, we recommend seeing a **{specialty}**.")
                 if st.button("Proceed to Book Appointment"):
-                    matched_docs = doctors[doctors["Specialty"].str.lower() == "general physician"]
+                    st.session_state.ready_to_book = True
 
-                    if not matched_docs.empty:
-                     selected_doctor = st.selectbox("Choose a doctor:", matched_docs["Doctor_Name"].unique())
+        elif st.session_state.ready_to_book:
+            docs = doctors[doctors["Specialty"] == st.session_state.specialty]
+            if docs.empty:
+                st.warning("No doctors available for this specialty.")
+            else:
+                selected_doc = st.selectbox("Choose a doctor:", docs["Doctor_Name"].unique())
+                time = st.selectbox("Pick a time slot:", ["9AM", "11AM", "1PM", "3PM"])
+                if st.button("Confirm Appointment"):
+                    emergency_name = patients[patients["Full Name"] == st.session_state.name]["Emergency Contact Name"].values[0]
+                    st.success(f"✅ Appointment booked with {selected_doc} at {time}!")
+                    st.info(f"📲 Emergency contact **{emergency_name}** has been notified.")
 
+        elif not st.session_state.checked_in:
+            st.warning("Please check in first by saying hello!")
 
-                        available_times = matched_docs[matched_docs["Doctor Name"] == selected_doctor]["Available Time Slot"].unique()
-                        selected_time = st.selectbox("Pick a time slot:", available_times)
-
-                        if st.button("Confirm Appointment"):
-                            emergency_name = patients[patients["Patient ID"] == st.session_state["patient_id"]]["Emergency Contact Name"].values[0]
-
-                            st.success(f"✅ Your appointment with **{selected_doctor}** at **{selected_time}** is confirmed!")
-                            st.info(f"📢 A reminder has also been sent to your emergency contact: **{emergency_name}**.")
-                    else:
-                        st.error("No General Physicians found in the system.")
-        else:
-            st.warning("Please check in first by saying 'hello' and entering your name and ID.")
-
-# ------------------------------
-# Doctor Availability Page
-# ------------------------------
+# ---------------- Doctor Availability ----------------
 elif page == "Doctor Availability":
     st.subheader("Doctor Schedule Viewer")
+    selected = st.selectbox("Filter by specialty:", doctors["Specialty"].unique())
+    df = doctors[doctors["Specialty"] == selected]
+    st.dataframe(df[["Doctor_Name", "Specialty", "Years_of_Experience"]])
 
-    selected_specialty = st.selectbox("Filter by specialty:", options=doctors["Specialty"].unique())
-    filtered = doctors[doctors["Specialty"] == selected_specialty]
-
-    st.write(f"Showing availability for **{selected_specialty}**:")
-    st.dataframe(filtered[[
-        "Doctor Name", 
-        "Available Days", 
-        "Available Time Slot", 
-        "Slot Duration (mins)", 
-        "Approx. Slots Per Day", 
-        "Booking Status"
-    ]])
-
-    if st.button("Show All Doctors"):
-        st.dataframe(doctors)
-
-# ------------------------------
-# Patient Data Page
-# ------------------------------
+# ---------------- Patient Data ----------------
 elif page == "Patient Data":
-    st.subheader("Patient No-Show Risk (Simulated Data)")
-
-    age_filter = st.slider("Filter by Age", min_value=int(patients["Age"].min()), max_value=int(patients["Age"].max()), value=(20, 60))
-    gender_filter = st.selectbox("Filter by Gender", options=patients["Gender"].unique())
-
-    filtered_patients = patients[
-        (patients["Age"] >= age_filter[0]) & 
-        (patients["Age"] <= age_filter[1]) & 
-        (patients["Gender"] == gender_filter)
-    ]
-
-    st.write("Filtered Patient Records:")
-    st.dataframe(filtered_patients[[
-        "Patient ID", "First Name", "Last Name", "Age", "Gender", "No-Shows/Cancellations"
-    ]])
-
+    st.subheader("Patient Viewer")
+    age_range = st.slider("Age Filter", 18, 80, (20, 60))
+    gender = st.selectbox("Gender:", patients["Gender"].unique())
+    df = patients[(patients["Age"].between(age_range[0], age_range[1])) & (patients["Gender"] == gender)]
+    st.dataframe(df[["Patient ID", "Full Name", "Age", "Gender", "No-Shows", "Emergency Contact Name"]])
