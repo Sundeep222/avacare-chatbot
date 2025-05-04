@@ -17,10 +17,15 @@ def load_data():
 
 patients, doctors = load_data()
 
-# Helper Function: Match patient
 def match_patient(patient_id, full_name):
-    matched = patients[(patients['Patient_ID'] == patient_id) & (patients['Full_Name'].str.lower() == full_name.lower())]
+    first, last = full_name.strip().split(" ", 1)  # splits "James Chavez" into "James", "Chavez"
+    matched = patients[
+        (patients['Patient_ID'] == patient_id) &
+        (patients['First_Name'].str.lower() == first.lower()) &
+        (patients['Last_Name'].str.lower() == last.lower())
+    ]
     return matched
+
 
 # ----------------------------
 # Chatbot Page
