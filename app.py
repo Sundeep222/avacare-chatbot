@@ -19,95 +19,62 @@ page = st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Dat
 
 # -------------------------------
 # Chatbot Page
-# -------------------------------
 if page == "Chatbot":
     st.subheader("Chat with AVACARE")
-    if "patient_id" not in st.session_state:
-        st.session_state.patient_id = None
-    if "patient_name" not in st.session_state:
-        st.session_state.patient_name = None
-    if "specialty_context" not in st.session_state:
-        st.session_state.specialty_context = None
+    
+    if "patient_registered" not in st.session_state:
+        st.session_state.patient_registered = False
 
     user_input = st.text_input("How can I help you today?")
+    
+    if not st.session_state.patient_registered and user_input.lower() in ["hello", "hi", "hey"]:
+        st.write("Hi! May I know your Patient ID and Name?")
+        patient_id = st.text_input("Enter your Patient ID:")
+        patient_name = st.text_input("Enter your Full Name:")
 
-    if user_input:
-        user_input_lower = user_input.lower()
+        if patient_id and patient_name:
+            st.session_state.patient_id = patient_id
+            st.session_state.patient_name = patient_name
+            st.session_state.patient_registered = True
+            st.success(f"Thanks {patient_name}, you're now checked in!")
+    
+    elif st.session_state.patient_registered:
+        user_input = st.text_input("What would you like to do? (e.g. symptoms, book appointment, insurance info)")
 
-        # Greet + Ask for Patient ID
-        if any(word in user_input_lower for word in ["hi", "hello", "hey"]):
-            st.write("Hi! May I know your Patient ID and Name?")
-            st.session_state.patient_id = st.text_input("Enter your Patient ID:", key="pid")
-            st.session_state.patient_name = st.text_input("Enter your Full Name:", key="pname")
+        if "symptom" in user_input.lower() or "feel" in user_input.lower():
+            symptoms = st.multiselect("Select your symptoms:", ["Headache", "Cough", "Fever", "Back pain", "Fatigue"])
+            if symptoms:
+                st.write("Thanks! Based on your symptoms, we suggest seeing a General Physician.")
+                if st.button("Proceed to Appointment Booking"):
+                    st.session_state.trigger_booking = True
+        
+        elif "insurance" in user_input.lower():
+            st.write("We accept most public and private insurance including Medicare, Aetna, Cigna, and UnitedHealthcare.")
 
-        elif st.session_state.patient_id and st.session_state.patient_name:
-            # SYMPTOMS to SPECIALIST mapping
-            symptom_map = {
-                "headache": "General Physician",
-                "fatigue": "General Physician",
-                "fever": "General Physician",
-                "cough": "ENT Specialist",
-                "pain": "Orthopedist",
-                "eczema": "Dermatology",
-                "rash": "Dermatology",
-                "insomnia": "Psychologist",
-                "depression": "Psychologist",
-            }
+        elif "book" in user_input.lower() or "appointment" in user_input.lower():
+            st.session_state.trigger_booking = True
 
-            matched_specialty = None
-            for symptom, specialty in symptom_map.items():
-                if symptom in user_input_lower:
-                    matched_specialty = specialty
-                    break
+        if st.session_state.get("trigger_booking"):
+            specialties = doctors["Specialty"].unique()
+            selected_specialty = st.selectbox("Select a specialty", specialties)
 
-            if matched_specialty:
-                st.session_state.specialty_context = matched_specialty
-                st.write(f"Based on your symptom, we suggest booking with a **{matched_specialty}**. Proceed below:")
+            filtered_doctors = doctors[doctors["Specialty"] == selected_specialty]
+            selected_doctor = st.selectbox("Choose a doctor", filtered_doctors["Doctor Name"].unique())
 
-                matched_doctors = doctors[doctors["Specialty"] == matched_specialty]
-                if not matched_doctors.empty:
-                    selected_doctor = st.selectbox("Choose a doctor:", matched_doctors["Doctor_Name"].unique())
-                    selected_date = st.date_input("Select appointment date")
-                    selected_time = st.selectbox("Pick a time slot:", ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM"])
-                    if st.button("Confirm Appointment"):
-                        st.success(f"✅ Appointment confirmed with **{selected_doctor}** on **{selected_date}** at **{selected_time}**.")
-                        st.session_state.specialty_context = None
-                else:
-                    st.warning("No doctors found for that specialty right now.")
+            available_times = filtered_doctors[filtered_doctors["Doctor Name"] == selected_doctor]["Available Time Slot"].unique()
+            selected_time = st.selectbox("Pick a time slot", available_times)
 
-            elif any(word in user_input_lower for word in ["book appointment", "schedule appointment", "make appointment"]):
-                st.write("Sure! Let's help you book an appointment.")
-                specialties = doctors["Specialty"].dropna().unique()
-                selected_specialty = st.selectbox("Choose a specialty:", specialties, key="manual_specialty")
-                matched_doctors = doctors[doctors["Specialty"] == selected_specialty]
-                selected_doctor = st.selectbox("Choose a doctor:", matched_doctors["Doctor_Name"].unique(), key="manual_doc")
-                selected_date = st.date_input("Select appointment date", key="manual_date")
-                selected_time = st.selectbox("Pick a time slot:", ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM"], key="manual_time")
-                if st.button("Confirm Manual Appointment"):
-                    st.success(f"✅ Appointment confirmed with **{selected_doctor}** on **{selected_date}** at **{selected_time}**.")
+            if st.button("Confirm Appointment"):
+                st.success(f"✅ Appointment booked for {st.session_state.patient_name} with **{selected_doctor}** at **{selected_time}**.")
+                st.session_state.trigger_booking = False
 
-            elif "insurance" in user_input_lower:
-                st.write("We accept Aetna, BlueCross, Medicaid, Medicare, UnitedHealth, and more.")
-
-            elif "tips" in user_input_lower or "advice" in user_input_lower:
-                st.write("💡 Health Tip: Stay hydrated, sleep 7–8 hours, and walk 20 mins a day!")
-
-            elif "uber" in user_input_lower or "voucher" in user_input_lower:
-                pid = st.session_state.patient_id
-                patient_row = patients[patients["Patient_ID"] == pid]
-                if not patient_row.empty and patient_row.iloc[0]["Uber_Voucher_Needed"] == "Yes":
-                    st.write("✅ You're eligible for an Uber health voucher. We will send it via text before your visit.")
-                else:
-                    st.write("You're currently not marked as needing a voucher, but you may still request assistance at the front desk.")
-
-            elif "emergency" in user_input_lower:
-                st.write("⚠️ If this is a medical emergency, please call 911 or go to your nearest hospital.")
-
-            else:
-                st.write("I'm still learning. Try asking about symptoms, insurance, Uber help, or booking.")
+        elif "bye" in user_input.lower():
+            st.write(f"Goodbye {st.session_state.patient_name}, take care!")
+            st.session_state.patient_registered = False
+            st.session_state.trigger_booking = False
 
         else:
-            st.warning("Please enter your Patient ID and Name to continue.")
+            st.write("Try saying something like 'I have a headache', 'book appointment', or 'insurance'.")
 
 # -------------------------------
 # Doctor Availability Page
