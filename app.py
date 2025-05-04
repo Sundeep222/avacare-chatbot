@@ -20,6 +20,14 @@ if 'step' not in st.session_state:
 if 'patient' not in st.session_state:
     st.session_state.patient = None
 
+return_status = st.session_state.patient.get("Returning_or_Fresh", "Fresh")
+if return_status == "Returning":
+    st.info("👋 Welcome back! Let's get you scheduled quickly.")
+else:
+    st.info("🆕 Welcome to AVACARE! Let's help you book your first appointment.")
+if st.checkbox("🎙️ Try voice interaction (beta)"):
+    st.info("🔊 Voice support is coming soon with Google Speech API integration!")
+
 # Step 0: Chat greeting
 prompt = st.text_input("How can I help you today?")
 if prompt.lower() in ["hello", "hi"] and st.session_state.step == 0:
