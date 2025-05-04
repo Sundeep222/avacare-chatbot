@@ -78,15 +78,24 @@ if st.session_state.step == 3:
             Thank you, **{patient_name}**. See you soon! 😊
             """)
 # Ask if they want a simulated email reminder
-send_reminder = st.radio("Would you like a reminder confirmation sent to your email?", ["Yes", "No"])
+# Save confirmation flag to session state
+st.session_state.appointment_confirmed = True
 
-if send_reminder == "Yes":
-    if st.button("Email Reminder"):
-        st.success("📨 Email reminder simulated successfully! (No actual email was sent)")
-        st.info("Goodbye! Talk to you soon 😊")
+# Show reminder options only if appointment was confirmed
+if 'appointment_confirmed' not in st.session_state:
+    st.session_state.appointment_confirmed = False
 
-elif send_reminder == "No":
-    st.info("Okay! Your appointment is confirmed. Goodbye and talk to you soon 😊")
+if st.session_state.appointment_confirmed:
+    st.write("Would you like to receive a reminder confirmation?")
+    send_reminder = st.radio("Send simulated email reminder?", ["Yes", "No"], key="reminder_choice")
+
+    if send_reminder == "Yes":
+        if st.button("Simulate Email Reminder"):
+            st.success("📨 Email reminder simulated successfully! (No actual email was sent)")
+            st.info("👋 Goodbye! Talk to you soon 😊")
+    else:
+        st.info("👋 Okay! Your appointment is confirmed. Talk to you soon 😊")
+
 
 
 # Sidebar
