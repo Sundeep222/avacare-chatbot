@@ -20,13 +20,10 @@ if 'step' not in st.session_state:
 if 'patient' not in st.session_state:
     st.session_state.patient = None
 
-return_status = st.session_state.patient.get("Returning_or_Fresh", "Fresh")
-if return_status == "Returning":
-    st.info("👋 Welcome back! Let's get you scheduled quickly.")
-else:
-    st.info("🆕 Welcome to AVACARE! Let's help you book your first appointment.")
-if st.checkbox("🎙️ Try voice interaction (beta)"):
-    st.info("🔊 Voice support is coming soon with Google Speech API integration!")
+# Optional: Check returning/fresh status
+if st.session_state.patient is not None:
+    return_status = st.session_state.patient["Returning_or_Fresh"] if "Returning_or_Fresh" in st.session_state.patient else "Fresh"
+    st.sidebar.info(f"🔁 Patient Type: {return_status}")
 
 # Step 0: Chat greeting
 prompt = st.text_input("How can I help you today?")
@@ -52,7 +49,7 @@ if st.session_state.step == 2 and prompt.lower() == "book appointment":
     st.write(f"Welcome back, {st.session_state.patient['First_Name']} {st.session_state.patient['Last_Name']}! Please select your symptoms below:")
     symptoms = st.multiselect("Choose your symptoms:", ["Headache", "Fever", "Cough", "Stomach pain"])
     if symptoms:
-        specialty = "General Physician"  # Can be logic-driven in future
+        specialty = "General Physician"  # Future logic could change this
         st.write(f"Thanks! Based on your symptoms, we recommend seeing a **{specialty}**.")
         if st.button("Proceed to Book Appointment"):
             st.session_state.step = 3
@@ -67,7 +64,6 @@ if st.session_state.step == 3:
         if st.button("Confirm Appointment"):
             patient_name = st.session_state.patient['First_Name'] + " " + st.session_state.patient['Last_Name']
             emergency_name = st.session_state.patient['Emergency_Contact_Name']
-            patient_email = st.session_state.patient["Email"]
             appointment_date = "2025-05-06"
 
             st.session_state.step = 4
@@ -85,26 +81,18 @@ if st.session_state.step == 3:
 
             Thank you, **{patient_name}**. See you soon! 😊
             """)
-# Ask if they want a simulated email reminder
-# Save confirmation flag to session state
-st.session_state.appointment_confirmed = True
+            st.session_state.appointment_confirmed = True
 
-# Show reminder options only if appointment was confirmed
-if 'appointment_confirmed' not in st.session_state:
-    st.session_state.appointment_confirmed = False
-
-if st.session_state.appointment_confirmed:
+# Step 4: Simulated Email Reminder
+if st.session_state.get('appointment_confirmed'):
     st.write("Would you like to receive a reminder confirmation?")
-    send_reminder = st.radio("Send simulated email reminder?", ["Yes", "No"], key="reminder_choice")
-
-    if send_reminder == "Yes":
+    choice = st.radio("Send simulated email reminder?", ["Yes", "No"], key="simulate_email")
+    if choice == "Yes":
         if st.button("Simulate Email Reminder"):
             st.success("📨 Email reminder simulated successfully!")
             st.info("👋 Goodbye! Talk to you soon 😊")
     else:
         st.info("👋 Okay! Your appointment is confirmed. Talk to you soon 😊")
-
-
 
 # Sidebar
 st.sidebar.title("Navigation")
