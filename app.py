@@ -21,12 +21,17 @@ page = st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Dat
 # Chatbot Page
 if page == "Chatbot":
     st.subheader("Chat with AVACARE")
-    
+
+    # Initialize session state
     if "patient_registered" not in st.session_state:
         st.session_state.patient_registered = False
+        st.session_state.trigger_booking = False
+        st.session_state.symptom_shared = False
 
-    user_input = st.text_input("How can I help you today?")
-    
+    # Greeting input
+    user_input = st.text_input("How can I help you today?", key="initial_input")
+
+    # Registration step
     if not st.session_state.patient_registered and user_input.lower() in ["hello", "hi", "hey"]:
         st.write("Hi! May I know your Patient ID and Name?")
         patient_id = st.text_input("Enter your Patient ID:")
@@ -37,24 +42,25 @@ if page == "Chatbot":
             st.session_state.patient_name = patient_name
             st.session_state.patient_registered = True
             st.success(f"Thanks {patient_name}, you're now checked in!")
-    
+
+    # After registration — continue flow
     elif st.session_state.patient_registered:
-        user_input = st.text_input("What would you like to do? (e.g. symptoms, book appointment, insurance info)")
 
-        if "symptom" in user_input.lower() or "feel" in user_input.lower():
-            symptoms = st.multiselect("Select your symptoms:", ["Headache", "Cough", "Fever", "Back pain", "Fatigue"])
+        # STEP 1: Symptom Input
+        if not st.session_state.symptom_shared:
+            st.write(f"Welcome back, {st.session_state.patient_name}! Please select your symptoms below:")
+            symptoms = st.multiselect("Choose your symptoms:", ["Headache", "Cough", "Fever", "Back pain", "Fatigue", "Chest pain"])
             if symptoms:
-                st.write("Thanks! Based on your symptoms, we suggest seeing a General Physician.")
-                if st.button("Proceed to Appointment Booking"):
+                st.session_state.symptoms = symptoms
+                st.session_state.symptom_shared = True
+                st.write("Thanks! Based on your symptoms, we recommend seeing a General Physician or appropriate specialist.")
+                if st.button("Proceed to Book Appointment"):
                     st.session_state.trigger_booking = True
-        
-        elif "insurance" in user_input.lower():
-            st.write("We accept most public and private insurance including Medicare, Aetna, Cigna, and UnitedHealthcare.")
 
-        elif "book" in user_input.lower() or "appointment" in user_input.lower():
-            st.session_state.trigger_booking = True
+        # STEP 2: Appointment Booking
+        if st.session_state.trigger_booking:
+            st.markdown("### Let's get your appointment booked!")
 
-        if st.session_state.get("trigger_booking"):
             specialties = doctors["Specialty"].unique()
             selected_specialty = st.selectbox("Select a specialty", specialties)
 
@@ -65,16 +71,11 @@ if page == "Chatbot":
             selected_time = st.selectbox("Pick a time slot", available_times)
 
             if st.button("Confirm Appointment"):
-                st.success(f"✅ Appointment booked for {st.session_state.patient_name} with **{selected_doctor}** at **{selected_time}**.")
+                st.success(f"✅ Appointment confirmed for **{st.session_state.patient_name}** with **{selected_doctor}** at **{selected_time}**.")
+                # Notify emergency contact
+                emergency_name = "Maria Chavez"  # Example contact, can be dynamic
+                st.info(f"📢 Notification sent to emergency contact **{emergency_name}** to remind you about your appointment.")
                 st.session_state.trigger_booking = False
-
-        elif "bye" in user_input.lower():
-            st.write(f"Goodbye {st.session_state.patient_name}, take care!")
-            st.session_state.patient_registered = False
-            st.session_state.trigger_booking = False
-
-        else:
-            st.write("Try saying something like 'I have a headache', 'book appointment', or 'insurance'.")
 
 # -------------------------------
 # Doctor Availability Page
