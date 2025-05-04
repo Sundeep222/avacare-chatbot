@@ -1,114 +1,78 @@
 import streamlit as st
 import pandas as pd
 
+# Load data
+doctors = pd.read_excel("doctors.xlsx")
+patients = pd.read_excel("patients.xlsx")
+
+# Helper function to find patient match
+def match_patient(patient_id, full_name):
+    matched = patients[(patients['Patient_ID'] == patient_id) &
+                       ((patients['First_Name'] + " " + patients['Last_Name']) == full_name)]
+    return matched.iloc[0] if not matched.empty else None
+
 # Title
 st.title("AVACARE - AI Scheduling Assistant")
 
-# Sidebar Navigation
-st.sidebar.header("Navigation")
-page = st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Data"])
+# Session state init
+if 'step' not in st.session_state:
+    st.session_state.step = 0
+if 'patient' not in st.session_state:
+    st.session_state.patient = None
 
-# Load data
-@st.cache_data
-def load_data():
-    patients = pd.read_excel("patients.xlsx")
-    doctors = pd.read_excel("doctors.xlsx")
-    return patients, doctors
+# Step 0: Chat greeting
+prompt = st.text_input("How can I help you today?")
+if prompt.lower() in ["hello", "hi"] and st.session_state.step == 0:
+    st.session_state.step = 1
 
-patients, doctors = load_data()
-
-def match_patient(patient_id, full_name):
-    first, last = full_name.strip().split(" ", 1)  # splits "James Chavez" into "James", "Chavez"
-    matched = patients[
-        (patients['Patient_ID'] == patient_id) &
-        (patients['First_Name'].str.lower() == first.lower()) &
-        (patients['Last_Name'].str.lower() == last.lower())
-    ]
-    return matched
-
-
-# ----------------------------
-# Chatbot Page
-# ----------------------------
-if page == "Chatbot":
-    st.subheader("Chat with AVACARE")
-    user_input = st.text_input("How can I help you today?")
-
-    if user_input:
-        user_input = user_input.lower()
-
-        if any(word in user_input for word in ["hello", "hi", "hey"]):
-            st.write("Hi! May I know your Patient ID and Name?")
-            patient_id = st.text_input("Enter your Patient ID:")
-            full_name = st.text_input("Enter your Full Name:")
-
-            if patient_id and full_name:
-                match = match_patient(patient_id, full_name)
-                if not match.empty:
-                    st.success(f"Thanks {full_name}, you're now checked in!")
-                    st.session_state['patient_name'] = full_name
-                    st.session_state['patient_id'] = patient_id
-                else:
-                    st.error("Sorry, we couldn’t find your record.")
-
-        elif "book appointment" in user_input:
-            if 'patient_name' not in st.session_state:
-                st.warning("Please say 'hello' first to check in.")
-            else:
-                name = st.session_state['patient_name']
-                st.write(f"Welcome back, {name}! Please select your symptoms below:")
-                symptoms = st.multiselect("Choose your symptoms:", ["Fever", "Cough", "Stomach pain", "Headache", "Skin rash"])
-
-                if symptoms:
-                    st.write("Thanks! Based on your symptoms, we recommend seeing a **General Physician** or appropriate specialist.")
-
-                    if st.button("Proceed to Book Appointment"):
-                        specialty = "General Physician"
-                        matched_docs = doctors[doctors["Specialty"] == specialty]
-
-                        if not matched_docs.empty:
-                            selected_doctor = st.selectbox("Choose a doctor:", matched_docs["Doctor_Name"])
-                            time_slots = ["9 AM - 10 AM", "11 AM - 12 PM", "2 PM - 3 PM", "4 PM - 5 PM"]
-                            selected_time = st.selectbox("Choose a time slot:", time_slots)
-
-                            if st.button("Confirm Appointment"):
-                                emergency_contact = patients.loc[patients['Patient_ID'] == st.session_state['patient_id'], 'Emergency_Contact_Name'].values[0]
-                                st.success(f"✅ Appointment booked with {selected_doctor} at {selected_time}.")
-                                st.info(f"📲 A reminder has been sent to your emergency contact: {emergency_contact}.")
-                        else:
-                            st.error("Sorry, no doctors found for that specialty.")
-
+# Step 1: Get Patient ID and Name
+if st.session_state.step == 1:
+    st.subheader("Hi! May I know your Patient ID and Name?")
+    patient_id = st.text_input("Enter your Patient ID:")
+    full_name = st.text_input("Enter your Full Name:")
+    if patient_id and full_name:
+        match = match_patient(patient_id, full_name)
+        if match is not None:
+            st.session_state.patient = match
+            st.success(f"Thanks {full_name}, you're now checked in!")
+            st.session_state.step = 2
         else:
-            st.write("Try saying 'hello' or 'book appointment'.")
+            st.error("Patient not found. Please check your ID or name.")
 
-# ----------------------------
-# Doctor Availability Page
-# ----------------------------
-elif page == "Doctor Availability":
-    st.subheader("Doctor Schedule Viewer")
-    specialty = st.selectbox("Choose a specialty:", doctors["Specialty"].unique())
-    st.dataframe(doctors[doctors["Specialty"] == specialty])
+# Step 2: Booking symptoms
+if st.session_state.step == 2 and prompt.lower() == "book appointment":
+    st.write(f"Welcome back, {st.session_state.patient['First_Name']} {st.session_state.patient['Last_Name']}! Please select your symptoms below:")
+    symptoms = st.multiselect("Choose your symptoms:", ["Headache", "Fever", "Cough", "Stomach pain"])
+    if symptoms:
+        specialty = "General Physician"  # Can be logic-driven in future
+        st.write(f"Thanks! Based on your symptoms, we recommend seeing a **{specialty}**.")
+        if st.button("Proceed to Book Appointment"):
+            st.session_state.step = 3
+            st.session_state.specialty = specialty
 
-# ----------------------------
-# Patient Data Page
-# ----------------------------
-elif page == "Patient Data":
-    st.subheader("Patient Records Viewer")
-    st.dataframe(patients)
+# Step 3: Choose doctor and time
+if st.session_state.step == 3:
+    matched_docs = doctors[doctors["Specialty"] == st.session_state.specialty]
+    if not matched_docs.empty:
+        selected_doctor = st.selectbox("Choose a doctor:", matched_docs["Doctor_Name"])
+        selected_time = st.selectbox("Choose a time slot:", ["9 AM - 10 AM", "10 AM - 11 AM", "11 AM - 12 PM"])
+        if st.button("Confirm Appointment"):
+            patient_name = st.session_state.patient['First_Name'] + " " + st.session_state.patient['Last_Name']
+            emergency_name = st.session_state.patient['Emergency_Contact_Name']
+            st.session_state.step = 4
+            st.markdown(f"""
+            ✅ **Appointment Confirmed!**  
+            **Patient:** {patient_name}  
+            **Doctor:** {selected_doctor}  
+            **Date & Time:** 2025-05-06 at {selected_time}  
+            **Location:** Dallas  
+            **Insurance:** {st.session_state.patient['Insurance_Type']}  
 
-    df = patients[(patients["Age"].between(age_range[0], age_range[1])) & (patients["Gender"] == gender)]
-    st.dataframe(df[["Patient ID", "Full Name", "Age", "Gender", "No-Shows", "Emergency Contact Name"]])
+            📩 A reminder will also be sent shortly to your emergency contact: **{emergency_name}**  
 
-st.success(f"""
-✅ **Appointment Confirmed!**
+            Thank you, **{patient_name}**. See you soon! 😊
+            """)
 
-Thank you, **{patient_name}**. Your appointment details are below:
-
-- **Doctor:** {doctor_name} ({specialty})  
-- **Date:** {appointment_date}  
-- **Time:** {appointment_time}  
-
-📢 A reminder has been sent to your emergency contact: **{emergency_contact}**.  
-
-👋 See you soon! Stay well, and don’t forget to arrive a few minutes early.
-""")
+# Optional Navigation (non-functional placeholders)
+st.sidebar.title("Navigation")
+st.sidebar.radio("Go to", ["Chatbot", "Doctor Availability", "Patient Data"])
