@@ -112,4 +112,3 @@ Thank you, **{patient_name}**. Your appointment details are below:
 
 👋 See you soon! Stay well, and don’t forget to arrive a few minutes early.
 """)
-
