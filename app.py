@@ -77,10 +77,17 @@ if st.session_state.step == 3:
 
             Thank you, **{patient_name}**. See you soon! 😊
             """)
+# Ask if they want a simulated email reminder
+send_reminder = st.radio("Would you like a reminder confirmation sent to your email?", ["Yes", "No"])
 
-            # Simulate Email Reminder
-            if st.button("Simulate Email Reminder"):
-                st.success("📨 Email reminder simulated successfully! (No actual email was sent)")
+if send_reminder == "Yes":
+    if st.button("Email Reminder"):
+        st.success("📨 Email reminder simulated successfully! (No actual email was sent)")
+        st.info("Goodbye! Talk to you soon 😊")
+
+elif send_reminder == "No":
+    st.info("Okay! Your appointment is confirmed. Goodbye and talk to you soon 😊")
+
 
 # Sidebar
 st.sidebar.title("Navigation")
