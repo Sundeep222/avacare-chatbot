@@ -1,8 +1,5 @@
 import streamlit as st
 import pandas as pd
-import yagmail
-import keyring
-
 
 # Load data
 doctors = pd.read_excel("doctors.xlsx")
@@ -81,26 +78,9 @@ if st.session_state.step == 3:
             Thank you, **{patient_name}**. See you soon! 😊
             """)
 
-            # EMAIL REMINDER
-            try:
-                yag = yagmail.SMTP("your_email@gmail.com")  # Replace with your Gmail
-                yag.send(
-                    to=patient_email,
-                    subject="Appointment Reminder from AVACARE",
-                    contents=f"""
-                    Hi {patient_name},
-
-                    This is a reminder for your appointment with Dr. {selected_doctor} on {appointment_date} at {selected_time}.
-
-                    Your emergency contact {emergency_name} has also been notified.
-
-                    Stay well,
-                    AVACARE AI Assistant
-                    """
-                )
-            except Exception as e:
-                st.error("❌ Failed to send email reminder. Please check your setup.")
-                st.code(str(e))
+            # Simulate Email Reminder
+            if st.button("Simulate Email Reminder"):
+                st.success("📨 Email reminder simulated successfully! (No actual email was sent)")
 
 # Sidebar
 st.sidebar.title("Navigation")
