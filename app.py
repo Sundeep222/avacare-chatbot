@@ -91,7 +91,7 @@ if st.session_state.appointment_confirmed:
 
     if send_reminder == "Yes":
         if st.button("Simulate Email Reminder"):
-            st.success("📨 Email reminder simulated successfully! (No actual email was sent)")
+            st.success("📨 Email reminder simulated successfully!")
             st.info("👋 Goodbye! Talk to you soon 😊")
     else:
         st.info("👋 Okay! Your appointment is confirmed. Talk to you soon 😊")
